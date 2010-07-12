@@ -1,8 +1,6 @@
 // Copyright (c) 2010 Jeroen Dierckx - Expertise Centre for Digital Media. All Rights reserved.
 // This source code is developed for the flemish (Belgian) OSMA project (http://osma.phl.be/)
 //
-// Contributors (Unity forum usernames): reissgrant, agentdm
-//
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -16,7 +14,6 @@
 #include <berkelium/WindowDelegate.hpp>
 
 // Forward declarations
-typedef std::vector<Berkelium::Rect> RectVector;
 
 /** Class Description */
 class UnityBerkeliumWindow: Berkelium::WindowDelegate
@@ -29,10 +26,12 @@ public:
 	// Information
 	Berkelium::Window *getBerkeliumWindow() const { return m_pWindow; }
 
-	// Dirty rectangles
-	bool isDirty() const { return !m_dirtyRects.empty(); }
-	void clearDirty() { m_dirtyRects.clear(); }
-	RectVector getDirtyRects();
+  //is dirty functions
+  bool getDirty();
+  void setDirty(bool dirtyBool);
+
+  //rect for passing values to Unity
+  Berkelium::Rect tempRect;
 
 protected:
 	// Berkelium::WindowDelegate functions
@@ -60,8 +59,9 @@ protected:
 	float *m_buffer;
 	int m_width, m_height;
 	string m_url;
+  float* floatpixel;
+  bool isDirty;
 
-	RectVector m_dirtyRects;
 };
 
 #endif // UNITYBERKELIUMWINDOW_H

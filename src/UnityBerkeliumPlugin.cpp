@@ -1,8 +1,6 @@
 // Copyright (c) 2010 Jeroen Dierckx - Expertise Centre for Digital Media. All Rights reserved.
 // This source code is developed for the flemish (Belgian) OSMA project (http://osma.phl.be/)
 //
-// Contributors (Unity forum usernames): reissgrant, agentdm
-//
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -64,13 +62,18 @@ PLUGIN_API void Berkelium_destroy()
 }
 
 
-PLUGIN_API void Berkelium_update()
+PLUGIN_API void Berkelium_update(int windowID)
 {
+	UnityBerkeliumWindow *pWindow = getWindow(windowID);
+
+  //set dirty to false, if it needs changing, onPaint will change it to true
+  pWindow->setDirty(false);
+
 	//! @todo We need to call this only once, not for each object
 	Berkelium::update();
 }
 
-PLUGIN_API bool Berkelium_Window_create(int uniqueID, void *colors, int width, int height, char *url)
+PLUGIN_API bool Berkelium_Window_create(int uniqueID, float *colors, int width, int height, char *url) // changed void* to float* since we know we're passing floats
 {
 	if(windows.find(uniqueID) != windows.end())
 	{
@@ -85,6 +88,7 @@ PLUGIN_API bool Berkelium_Window_create(int uniqueID, void *colors, int width, i
 
 	cerr << "Berkelium window created: " << pWindow << " (size=" << width << ", " << height << "; url=" << url << ")" << endl;
 	windows[uniqueID] = pWindow;
+
 	return true;
 }
 
@@ -97,35 +101,6 @@ PLUGIN_API void Berkelium_Window_destroy(int windowID)
 		windows.erase(it);
 	}
 }
-
-PLUGIN_API bool Berkelium_Window_isDirty(int windowID)
-{
-	UnityBerkeliumWindow *pWindow = getWindow(windowID);
-	if(pWindow)
-		return pWindow->isDirty();
-	else
-	{
-		cerr << "Warning: no berkelium window found with ID " << windowID << "!" << endl;
-		return false;
-	}
-}
-
-// TEMP
-PLUGIN_API void Berkelium_Window_clearDirty(int windowID)
-{
-	UnityBerkeliumWindow *pWindow = getWindow(windowID);
-	if(pWindow)
-		return pWindow->clearDirty();
-	else
-		cerr << "Warning: no berkelium window found with ID " << windowID << "!" << endl;
-}
-
-/*PLUGIN_API Berkelium::Rect[] Berkelium_Window_getUpdates(int windowID)
-{
-	RectVector result =;
-
-	return result;
-}*/
 
 PLUGIN_API void Berkelium_Window_mouseDown(int windowID, int button)
 {
@@ -154,42 +129,80 @@ PLUGIN_API void Berkelium_Window_mouseMove(int windowID, int x, int y)
 		cerr << "Warning: no berkelium window found with ID " << windowID << "!" << endl;
 }
 
-PLUGIN_API void Berkelium_Window_character(int windowID, wchar_t c)
-{
+PLUGIN_API void Berkelium_Window_textEvent(int windowID, char c){
+
 	UnityBerkeliumWindow *pWindow = getWindow(windowID);
-	if(pWindow)
-		pWindow->getBerkeliumWindow()->textEvent(&c, 1);
-	else
+	if(pWindow){
+		
+        wchar_t outchars[2]; // the structure for passing chars
+        outchars[0] = c; // the character we want to inject
+        outchars[1] = 0; //terminating character
+        pWindow->getBerkeliumWindow()->textEvent(outchars,1);
+
+	}else{
 		cerr << "Warning: no berkelium window found with ID " << windowID << "!" << endl;
+	}
 }
 
-PLUGIN_API void Berkelium_Window_keyEvent(int windowID, bool pressed, int mods, int vk_code, int scancode)
-{
+PLUGIN_API void Berkelium_Window_keyEvent(int windowID, int key){
+
 	UnityBerkeliumWindow *pWindow = getWindow(windowID);
-	if(pWindow)
-		pWindow->getBerkeliumWindow()->keyEvent(pressed, mods, vk_code, scancode);
-	else
+	if(pWindow){
+
+		bool pressed = true; 
+        int wvmods = 0; //mapGLUTModsToBerkeliumMods(glutGetModifiers());
+        int vk_code = key; // this is used for backspace as it cannot be passed as char
+        int scancode = 0;
+
+       pWindow->getBerkeliumWindow()->keyEvent(pressed, wvmods, vk_code, scancode);   
+
+	}else{
 		cerr << "Warning: no berkelium window found with ID " << windowID << "!" << endl;
+	}
 }
 
-/// Thanks to agentdm
-PLUGIN_API void Berkelium_Window_executeJavascript(int windowID, char* javaScript)
-{
-	cerr << "Javascript call made: " << javaScript << endl;
+PLUGIN_API int Berkelium_Window_rectLeft(int windowID){
 	UnityBerkeliumWindow *pWindow = getWindow(windowID);
-
-	size_t scriptLength = ::strlen(javaScript);
-
-	// Convert to Wchar ( is there an easier way to do this? )
-	const int strlength = 100;
-	wchar_t wctStrJScript[strlength];
-	MultiByteToWideChar( CP_ACP, 0, javaScript, scriptLength, wctStrJScript, strlength);
-	wctStrJScript[scriptLength] = 0;
-
-	std::wcerr << "Javascript converted: " << wctStrJScript << endl;
-
-	if(pWindow)
-		pWindow->getBerkeliumWindow()->executeJavascript(wctStrJScript, scriptLength);
-	else
+	if(pWindow){
+    return pWindow->tempRect.left();
+	}else{
 		cerr << "Warning: no berkelium window found with ID " << windowID << "!" << endl;
+    return 0;
+	}
+}
+PLUGIN_API int Berkelium_Window_rectTop(int windowID){
+	UnityBerkeliumWindow *pWindow = getWindow(windowID);
+	if(pWindow){
+    return pWindow->tempRect.top();
+	}else{
+		cerr << "Warning: no berkelium window found with ID " << windowID << "!" << endl;
+    return 0;
+	}
+}
+PLUGIN_API int Berkelium_Window_rectHeight(int windowID){
+	UnityBerkeliumWindow *pWindow = getWindow(windowID);
+	if(pWindow){
+    return pWindow->tempRect.height();
+	}else{
+		cerr << "Warning: no berkelium window found with ID " << windowID << "!" << endl;
+    return 0;
+	}
+}
+PLUGIN_API int Berkelium_Window_rectWidth(int windowID){
+	UnityBerkeliumWindow *pWindow = getWindow(windowID);
+	if(pWindow){
+    return pWindow->tempRect.width();
+	}else{
+		cerr << "Warning: no berkelium window found with ID " << windowID << "!" << endl;
+    return 0;
+	}
+}
+PLUGIN_API bool Berkelium_Window_isDirty(int windowID){
+	UnityBerkeliumWindow *pWindow = getWindow(windowID);
+	if(pWindow){
+    return pWindow->getDirty();
+	}else{
+		cerr << "Warning: no berkelium window found with ID " << windowID << "!" << endl;
+    return false;
+	}
 }
